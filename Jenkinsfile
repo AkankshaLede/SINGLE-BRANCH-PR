@@ -139,15 +139,46 @@ pipeline {
             }
         }
 
+        // stage('Detect Changed .cfg Files') {
+        //     steps {
+        //         script {
+        //             withChecks(name: 'CFG Change Detection') {
+        //                 try {
+        //                     echo "📄 Detecting changed .cfg files..."
+        //                     sh "git fetch origin main"
+
+        //                     def changedCfgFiles = sh(script: "git diff --name-only origin/main...HEAD | grep '\\.cfg\$' || true", returnStdout: true).trim()
+
+        //                     if (!changedCfgFiles) {
+        //                         echo "✅ No .cfg files changed. Skipping comparison stage."
+        //                         env.SKIP_REMAINING = "true"
+        //                     } else {
+        //                         env.CFG_CHANGED_FILES = changedCfgFiles.replaceAll('\\n', ',')
+        //                         echo "🔍 Changed CFG files: ${env.CFG_CHANGED_FILES}"
+        //                     }
+        //                 } catch (err) {
+        //                     echo "⚠️ Failed during CFG change detection"
+        //                     error("Change detection failed: ${err}")
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
         stage('Detect Changed .cfg Files') {
             steps {
                 script {
                     withChecks(name: 'CFG Change Detection') {
                         try {
                             echo "📄 Detecting changed .cfg files..."
-                            sh "git fetch origin main"
 
-                            def changedCfgFiles = sh(script: "git diff --name-only origin/main...HEAD | grep '\\.cfg\$' || true", returnStdout: true).trim()
+                            // 🔧 Properly fetch and store main branch reference
+                            sh "git fetch origin main:refs/remotes/origin/main"
+
+                            def changedCfgFiles = sh(
+                                script: "git diff --name-only origin/main...HEAD | grep '\\.cfg\$' || true",
+                                returnStdout: true
+                            ).trim()
 
                             if (!changedCfgFiles) {
                                 echo "✅ No .cfg files changed. Skipping comparison stage."
@@ -164,6 +195,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Run CFG Comparison') {
             when {
