@@ -109,7 +109,6 @@ pipeline {
         SKIP_REMAINING = "false"
     }
 
-    stages {
         stage('Determine Event Type') {
             steps {
                 script {
@@ -117,17 +116,28 @@ pipeline {
                         IS_PR = true
                         BRANCH_NAME = env.CHANGE_BRANCH
                         echo "📦 Pull Request from branch: ${BRANCH_NAME}"
+
+                        // Allow only PRs from branch1
+                        if (BRANCH_NAME != 'branch1') {
+                            echo "⚠️ Pull request is not from allowed source branch (branch1), skipping build."
+                            currentBuild.result = 'SUCCESS'
+                            error("Disallowed PR source branch: ${BRANCH_NAME}")
+                        }
+
                     } else if (env.BRANCH_NAME) {
                         echo "🔁 Branch build: ${env.BRANCH_NAME}"
+                        BRANCH_NAME = env.BRANCH_NAME // Assign if not a PR
+
+                        // Allow direct builds from main, branch1, or branch2
+                        def allowedBranches = ['main', 'branch1', 'branch2']
+                        if (!allowedBranches.contains(BRANCH_NAME)) {
+                            echo "⚠️ Skipping branch ${BRANCH_NAME} as it is not in the allowed list."
+                            currentBuild.result = 'SUCCESS'
+                            error("Branch ${BRANCH_NAME} is not allowed, skipping the build.")
+                        }
+
                     } else {
                         error("Unsupported event: Could not detect branch from environment")
-                    }
-
-                    def allowedBranches = ['main', 'branch1','branch2']
-                    if (!allowedBranches.contains(BRANCH_NAME)) {
-                        echo "⚠️ Skipping branch ${BRANCH_NAME} as it is not in the allowed list."
-                        currentBuild.result = 'SUCCESS'
-                        error("Branch ${BRANCH_NAME} is not allowed, skipping the build.")
                     }
                 }
             }
